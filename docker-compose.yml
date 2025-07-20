@@ -1,0 +1,64 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: "postgres:15-alpine"
+    ports:
+      - "5432:5432" # Standard PostgreSQL port
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data" # Persist database data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=notifications_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080" # We'll access the UI on port 8080
+    depends_on:
+      postgres:
+        condition: service_healthy # Wait for postgres to be ready
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: "rabbitmq:3.13-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - "rabbitmq_data:/var/lib/rabbitmq"
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis for Rate Limiting and Caching
+  redis:
+    image: "redis:7-alpine"
+    ports:
+      - "6379:6379"
+    volumes:
+      - "redis_data:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:

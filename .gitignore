@@ -1,0 +1,21 @@
+# Environment variables - DO NOT COMMIT
+.env
+
+# Frontend dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.DS_Store
+
+# Go build files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Log files
+*.log
+
+# IDE files
+.idea/
+.vscode/
