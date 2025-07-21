@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import Popup from './Popup';
 
 const PreferenceManager = () => {
   const [userId, setUserId] = useState('');
@@ -9,6 +10,7 @@ const PreferenceManager = () => {
     { channel: 'whatsapp', enabled: false },
   ]);
   const [message, setMessage] = useState('');
+  const [popup, setPopup] = useState({ show: false, message: '' });
 
   // Fetches preferences for the given userID
   const handleFetch = async () => {
@@ -24,6 +26,7 @@ const PreferenceManager = () => {
       setMessage(`Preferences fetched for ${userId}.`);
     } catch (error) {
       setMessage(`Error fetching preferences: ${error.message}`);
+      setPopup({ show: true, message: error.response?.data?.error || error.message });
     }
   };
 
@@ -34,17 +37,15 @@ const PreferenceManager = () => {
       return;
     }
     try {
-      
       const response = await axios.put(`http://localhost:8081/v1/users/${userId}/preferences`, preferences);
-      //console.log(response);
       if (response.status === 200) {
         setMessage(`Preferences saved for ${userId}.`);
       }else{
         setMessage(`Unexpected response status: ${response.status}.`);
       }
-      
     } catch (error) {
       setMessage(`Error saving preferences: ${error.message}`);
+      setPopup({ show: true, message: error.response?.data?.error || error.message });
     }
   };
 
@@ -90,6 +91,11 @@ const PreferenceManager = () => {
         <button onClick={handleSave} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded">Save</button>
       </div>
       {message && <p className="mt-4 text-sm text-slate-400">{message}</p>}
+      <Popup
+        show={popup.show}
+        message={popup.message}
+        onClose={() => setPopup({ show: false, message: '' })}
+      />
     </div>
   );
 };

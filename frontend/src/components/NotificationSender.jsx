@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import Popup from './Popup';
 
 const NotificationSender = () => {
   const [form, setForm] = useState({
@@ -9,6 +10,7 @@ const NotificationSender = () => {
     message: '', 
   });
   const [status, setStatus] = useState('');
+  const [popup, setPopup] = useState({ show: false, message: '' });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,6 +27,7 @@ const NotificationSender = () => {
       console.log(form);
     } catch (error) {
       setStatus(`Error: ${error.response?.data?.error || error.message}`);
+      setPopup({ show: true, message: error.response?.data?.error || error.message });
     }
   };
 
@@ -62,6 +65,11 @@ const NotificationSender = () => {
         <button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded">Send Notification</button>
       </form>
       {status && <p className="mt-4 text-sm text-slate-400">{status}</p>}
+      <Popup
+        show={popup.show}
+        message={popup.message}
+        onClose={() => setPopup({ show: false, message: '' })}
+      />
     </div>
   );
 };
