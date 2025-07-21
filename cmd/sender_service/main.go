@@ -14,28 +14,11 @@ import (
 	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"github.com/PrateekKrishna/notification-system/internal/models"
+	"github.com/PrateekKrishna/notification-system/internal/utils"
 )
 
-// NotificationLog is the database model. It represents a single notification record.
-type NotificationLog struct {
-	gorm.Model
-	UserID    string
-	Type      string
-	Message   string
-	Recipient string
-	Status    string // Can be PENDING, SENT, FAILED, SKIPPED
-}
 
-// Preference is used to decode the response from the User Preference Service.
-type Preference struct {
-	Channel string `json:"channel"`
-	Enabled bool   `json:"enabled"`
-}
-
-// QueueMessage is the structure of the message received from RabbitMQ.
-type QueueMessage struct {
-	NotificationLogID uint `json:"notification_log_id"`
-}
 
 // Global variables for shared resources.
 var logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -56,26 +39,26 @@ func main() {
 		panic("Failed to connect to database!")
 	}
 	// This ensures the notification_logs table exists.
-	db.AutoMigrate(&NotificationLog{})
+	db.AutoMigrate(&models.NotificationLog{})
 
 	// Initialize the Twilio client.
 	twilioClient = twilio.NewRestClient()
 
 	// --- RabbitMQ Connection ---
 	conn, err := amqp.Dial("amqp://user:password@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
+	utils.FailOnError(logger, err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
+	utils.FailOnError(logger, err, "Failed to open a channel")
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare("notifications", true, false, false, false, nil)
-	failOnError(err, "Failed to declare a queue")
+	utils.FailOnError(logger, err, "Failed to declare a queue")
 
 	// Start consuming messages from the queue.
 	msgs, err := ch.Consume(q.Name, "", false, false, false, false, nil)
-	failOnError(err, "Failed to register a consumer")
+	utils.FailOnError(logger, err, "Failed to register a consumer")
 
 	logger.Info("Sender Service started. Waiting for messages.")
 
@@ -96,7 +79,7 @@ func main() {
 
 // processMessage handles a single message from the queue.
 func processMessage(d amqp.Delivery) {
-	var qm QueueMessage
+	var qm models.QueueMessage
 	err := json.Unmarshal(d.Body, &qm)
 	if err != nil {
 		logger.Error("Failed to decode queue message", "error", err)
@@ -104,7 +87,7 @@ func processMessage(d amqp.Delivery) {
 		return
 	}
 
-	var logEntry NotificationLog
+	var logEntry models.NotificationLog
 	result := db.First(&logEntry, qm.NotificationLogID)
 	if result.Error != nil {
 		logger.Error("Failed to find notification log in DB", "log_id", qm.NotificationLogID, "error", result.Error)
@@ -122,7 +105,7 @@ func processMessage(d amqp.Delivery) {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	var prefs []Preference
+	var prefs []models.Preference
 	json.Unmarshal(body, &prefs)
 
 	// Default to false. A notification is only sent if an explicit "enabled: true" preference is found.
@@ -134,7 +117,7 @@ func processMessage(d amqp.Delivery) {
 		}
 	}
 
-	
+
 	var sendErr error
 	if shouldSend {
 		switch logEntry.Type {
@@ -167,7 +150,7 @@ func processMessage(d amqp.Delivery) {
 
 // --- Sender Functions ---
 
-func sendSMS(n NotificationLog) error {
+func sendSMS(n models.NotificationLog) error {
 	params := &twilioApi.CreateMessageParams{}
 	params.SetTo(n.Recipient)
 	params.SetFrom(os.Getenv("TWILIO_PHONE_NUMBER"))
@@ -176,7 +159,7 @@ func sendSMS(n NotificationLog) error {
 	return err
 }
 
-func sendWhatsApp(n NotificationLog) error {
+func sendWhatsApp(n models.NotificationLog) error {
 	params := &twilioApi.CreateMessageParams{}
 	params.SetTo("whatsapp:" + n.Recipient)
 	params.SetFrom(os.Getenv("TWILIO_WHATSAPP_NUMBER"))
@@ -185,7 +168,7 @@ func sendWhatsApp(n NotificationLog) error {
 	return err
 }
 
-func sendEmail(n NotificationLog) error {
+func sendEmail(n models.NotificationLog) error {
 	from := os.Getenv("GMAIL_ADDRESS")
 	password := os.Getenv("GMAIL_APP_PASSWORD")
 	to := []string{n.Recipient}
@@ -200,10 +183,4 @@ func sendEmail(n NotificationLog) error {
 	return err
 }
 
-// failOnError is a helper function to handle critical startup errors.
-func failOnError(err error, msg string) {
-	if err != nil {
-		logger.Error(msg, "error", err)
-		panic(err)
-	}
-}
+

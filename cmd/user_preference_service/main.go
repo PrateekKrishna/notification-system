@@ -1,4 +1,3 @@
-// cmd/user_preference_service/main.go
 package main
 
 import (
@@ -9,16 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"github.com/PrateekKrishna/notification-system/internal/models"
 )
 
-// Preference defines the database table structure.
-// gorm.Model adds ID, CreatedAt, UpdatedAt, DeletedAt fields automatically.
-type Preference struct {
-	gorm.Model
-	UserID  string `json:"user_id"`
-	Channel string `json:"channel"`
-	Enabled bool   `json:"enabled"`
-}
 
 func main() {
 	// 1. Connect to the database
@@ -29,7 +21,7 @@ func main() {
 	}
 
 	// 2. Auto-migrate the schema to create the 'preferences' table
-	db.AutoMigrate(&Preference{})
+	db.AutoMigrate(&models.Preference{})
 
 	// 3. Setup Gin router
 	router := gin.Default()
@@ -48,7 +40,7 @@ func main() {
 func getPreferencesHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		var preferences []Preference
+		var preferences []models.Preference
 
 		// Find preferences where user_id matches
 		result := db.Where("user_id = ?", id).Find(&preferences)
@@ -70,7 +62,7 @@ func getPreferencesHandler(db *gorm.DB) gin.HandlerFunc {
 func updatePreferencesHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		var newPrefs []Preference
+		var newPrefs []models.Preference
 
 		if err := c.ShouldBindJSON(&newPrefs); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
@@ -81,7 +73,7 @@ func updatePreferencesHandler(db *gorm.DB) gin.HandlerFunc {
 		tx := db.Begin()
 
 		// Delete old preferences for this user
-		tx.Where("user_id = ?", id).Delete(&Preference{})
+		tx.Where("user_id = ?", id).Delete(&models.Preference{})
 
 		// Create new preferences
 		for _, pref := range newPrefs {
