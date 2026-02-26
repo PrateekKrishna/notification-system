@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Popup from './Popup';
 
+const USER_PREF_API = import.meta.env.VITE_USER_PREF_API_URL || 'http://localhost:8081';
+const NOTIFICATION_API = import.meta.env.VITE_NOTIFICATION_API_URL || 'http://localhost:8082';
+
 const NotificationSender = () => {
   const [form, setForm] = useState({
     user_id: '',
@@ -19,7 +22,7 @@ const NotificationSender = () => {
   const handleUserIdBlur = async () => {
     if (!form.user_id) return;
     try {
-      const response = await axios.get(`http://localhost:8081/v1/users/${form.user_id}`);
+      const response = await axios.get(`${USER_PREF_API}/v1/users/${form.user_id}`);
       if (response.data) {
         // Pre-fill recipient based on selected type, or just default to phone if not selected
         const recipient = form.type === 'email' ? response.data.email : response.data.phone_number;
@@ -41,7 +44,7 @@ const NotificationSender = () => {
     e.preventDefault();
     setStatus('Sending...');
     try {
-      const response = await axios.post('http://localhost:8082/v1/notifications', form);
+      const response = await axios.post(`${NOTIFICATION_API}/v1/notifications`, form);
       if (response.status === 202) {
         setStatus('Notification accepted successfully!');
       }

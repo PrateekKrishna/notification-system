@@ -23,15 +23,21 @@ var logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 var twilioClient *twilio.RestClient
 var db *gorm.DB
 
-func main() {
-	// Load environment variables from the .env file in the project root.
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		logger.Warn("Error loading .env file, continuing without it")
+func getEnv(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
 	}
+	return fallback
+}
+
+func main() {
+	// Load environment variables from .env file (ignored if not present in production)
+	godotenv.Load("../../.env")
+	godotenv.Load(".env") // also try local .env for Docker builds
 
 	// --- Database Connection ---
-	dsn := "host=localhost user=user password=password dbname=notifications_db port=5432 sslmode=disable"
+	dsn := getEnv("DATABASE_URL", "host=localhost user=user password=password dbname=notifications_db port=5432 sslmode=disable")
+	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to database!")
@@ -43,7 +49,8 @@ func main() {
 	twilioClient = twilio.NewRestClient()
 
 	// --- RabbitMQ Connection ---
-	conn, err := amqp.Dial("amqp://user:password@localhost:5672/")
+	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://user:password@localhost:5672/")
+	conn, err := amqp.Dial(rabbitmqURL)
 	utils.FailOnError(logger, err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -53,6 +60,9 @@ func main() {
 
 	q, err := ch.QueueDeclare("notifications", true, false, false, false, nil)
 	utils.FailOnError(logger, err, "Failed to declare a queue")
+
+	// The URL this service uses to call the user preference service
+	userPrefServiceURL := getEnv("USER_PREF_SERVICE_URL", "http://localhost:8081")
 
 	// Start consuming messages from the queue.
 	msgs, err := ch.Consume(q.Name, "", false, false, false, false, nil)
@@ -67,7 +77,7 @@ func main() {
 	go func() {
 		for d := range msgs {
 			// Launch a new goroutine for each message to process them concurrently.
-			go processMessage(d)
+			go processMessage(d, userPrefServiceURL)
 		}
 	}()
 
@@ -76,7 +86,7 @@ func main() {
 }
 
 // processMessage handles a single message from the queue.
-func processMessage(d amqp.Delivery) {
+func processMessage(d amqp.Delivery, userPrefServiceURL string) {
 	var qm models.QueueMessage
 	err := json.Unmarshal(d.Body, &qm)
 	if err != nil {
@@ -94,7 +104,7 @@ func processMessage(d amqp.Delivery) {
 	}
 	logger.Info("Processing message", "log_id", logEntry.ID, "user_id", logEntry.UserID)
 
-	resp, err := http.Get("http://localhost:8081/v1/users/" + logEntry.UserID + "/preferences")
+	resp, err := http.Get(userPrefServiceURL + "/v1/users/" + logEntry.UserID + "/preferences")
 	if err != nil {
 		logger.Error("Failed to call user preference service", "error", err, "log_id", logEntry.ID)
 		d.Nack(false, true)

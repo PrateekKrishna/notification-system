@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Popup from './Popup';
 
+const USER_PREF_API = import.meta.env.VITE_USER_PREF_API_URL || 'http://localhost:8081';
+
 const PreferenceManager = () => {
   const [userId, setUserId] = useState('');
   const [preferences, setPreferences] = useState([
@@ -19,7 +21,7 @@ const PreferenceManager = () => {
       return;
     }
     try {
-      const response = await axios.get(`http://localhost:8081/v1/users/${userId}/preferences`);
+      const response = await axios.get(`${USER_PREF_API}/v1/users/${userId}/preferences`);
       if (response.data.length > 0) {
         setPreferences(response.data);
       }
@@ -37,7 +39,7 @@ const PreferenceManager = () => {
       return;
     }
     try {
-      const response = await axios.put(`http://localhost:8081/v1/users/${userId}/preferences`, preferences);
+      const response = await axios.put(`${USER_PREF_API}/v1/users/${userId}/preferences`, preferences);
       if (response.status === 200) {
         setMessage(`Preferences saved for ${userId}.`);
       }else{

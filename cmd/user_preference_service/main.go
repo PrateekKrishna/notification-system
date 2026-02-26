@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/PrateekKrishna/notification-system/internal/models"
 	"github.com/gin-contrib/cors"
@@ -11,9 +12,16 @@ import (
 	"gorm.io/gorm"
 )
 
+func getEnv(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
+}
+
 func main() {
-	// 1. Connect to the database
-	dsn := "host=localhost user=user password=password dbname=notifications_db port=5432 sslmode=disable"
+	// 1. Connect to the database using environment variables
+	dsn := getEnv("DATABASE_URL", "host=localhost user=user password=password dbname=notifications_db port=5432 sslmode=disable")
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to database!")
@@ -36,7 +44,8 @@ func main() {
 		v1.PUT("/users/:id/preferences", updatePreferencesHandler(db))
 	}
 
-	router.Run(":8081")
+	port := getEnv("PORT", "8081")
+	router.Run(":" + port)
 }
 
 func getPreferencesHandler(db *gorm.DB) gin.HandlerFunc {

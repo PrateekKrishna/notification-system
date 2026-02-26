@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Popup from './Popup';
 
+const USER_PREF_API = import.meta.env.VITE_USER_PREF_API_URL || 'http://localhost:8081';
+
 const UserList = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -10,7 +12,7 @@ const UserList = () => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await axios.get('http://localhost:8081/v1/users');
+                const response = await axios.get(`${USER_PREF_API}/v1/users`);
                 setUsers(response.data);
             } catch (err) {
                 setError('Failed to fetch users. Is the backend running?');

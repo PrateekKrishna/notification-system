@@ -1,0 +1,11 @@
+# Railway Deployment Guide — Step by Step
+# This file is for reference. Railway uses dashboard UI, not this file.
+
+# Services to create on Railway:
+# 1. PostgreSQL  (from Railway template)
+# 2. RabbitMQ    (from Railway template)
+# 3. Redis       (from Railway template)
+# 4. user-preference-service  (from GitHub repo, Dockerfile.user-preference)
+# 5. notification-service     (from GitHub repo, Dockerfile.notification)
+# 6. sender-service           (from GitHub repo, Dockerfile.sender)
+# 7. frontend                 (from GitHub repo, frontend/Dockerfile)

@@ -26,9 +26,16 @@ const (
 	rateLimitWindow    = time.Minute
 )
 
+func getEnv(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
+}
+
 func main() {
 	// --- Database Connection ---
-	dsn := "host=localhost user=user password=password dbname=notifications_db port=5432 sslmode=disable"
+	dsn := getEnv("DATABASE_URL", "host=localhost user=user password=password dbname=notifications_db port=5432 sslmode=disable")
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to database!")
@@ -37,7 +44,8 @@ func main() {
 	db.AutoMigrate(&models.NotificationLog{}, &models.Preference{})
 
 	// --- RabbitMQ Connection ---
-	conn, err := amqp.Dial("amqp://user:password@localhost:5672/")
+	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://user:password@localhost:5672/")
+	conn, err := amqp.Dial(rabbitmqURL)
 	utils.FailOnError(logger, err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 	ch, err := conn.Channel()
@@ -47,7 +55,8 @@ func main() {
 	utils.FailOnError(logger, err, "Failed to declare a queue")
 
 	// --- Redis Connection ---
-	redisClient = redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	redisAddr := getEnv("REDIS_URL", "localhost:6379")
+	redisClient = redis.NewClient(&redis.Options{Addr: redisAddr})
 
 	// --- Gin Router ---
 	router := gin.Default()
@@ -57,8 +66,9 @@ func main() {
 		v1.POST("/notifications", rateLimiter(), sendNotificationHandler(ch, db))
 	}
 
-	logger.Info("Notification Service running on port 8082")
-	router.Run(":8082")
+	port := getEnv("PORT", "8082")
+	logger.Info("Notification Service running", "port", port)
+	router.Run(":" + port)
 }
 
 // sendNotificationHandler processes the request and publishes to RabbitMQ.

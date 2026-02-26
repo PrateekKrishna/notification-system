@@ -1,0 +1,24 @@
+# ===== BUILD STAGE =====
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Copy go module files and download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the entire source
+COPY . .
+
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o /sender-service ./cmd/sender_service
+
+# ===== FINAL STAGE =====
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+
+COPY --from=builder /sender-service .
+
+CMD ["./sender-service"]

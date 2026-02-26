@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Popup from './Popup';
 
+const USER_PREF_API = import.meta.env.VITE_USER_PREF_API_URL || 'http://localhost:8081';
+
 const UserRegistration = () => {
   const [form, setForm] = useState({
     id: '',
@@ -20,7 +22,7 @@ const UserRegistration = () => {
     e.preventDefault();
     setStatus('Registering...');
     try {
-      const response = await axios.post('http://localhost:8081/v1/users', form);
+      const response = await axios.post(`${USER_PREF_API}/v1/users`, form);
       if (response.status === 201) {
         setStatus(`User ${form.name} registered successfully!`);
       }
