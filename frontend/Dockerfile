@@ -9,9 +9,12 @@ RUN npm ci
 
 COPY frontend/ .
 
-# Build the React app (VITE_* env vars are injected at build time)
+# Build args from Railway Variables tab
 ARG VITE_USER_PREF_API_URL
 ARG VITE_NOTIFICATION_API_URL
+# Must explicitly set as ENV so Vite can read them during npm run build
+ENV VITE_USER_PREF_API_URL=$VITE_USER_PREF_API_URL
+ENV VITE_NOTIFICATION_API_URL=$VITE_NOTIFICATION_API_URL
 
 RUN npm run build
 
