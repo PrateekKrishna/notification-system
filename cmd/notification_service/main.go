@@ -91,7 +91,9 @@ func sendNotificationHandler(ch *amqp.Channel, db *gorm.DB) gin.HandlerFunc {
 
 		// 1. Check if the user exists AND has enabled the specific notification type.
 		var preferenceCount int64
-		db.Model(&models.Preference{}).Where("user_id = ? AND channel = ? AND enabled = ?", request.UserID, request.Type, true).Count(&preferenceCount)
+		logger.Info("DEBUG: checking preference", "user_id", request.UserID, "channel", request.Type)
+		prefResult := db.Model(&models.Preference{}).Where("user_id = ? AND channel = ? AND enabled = ?", request.UserID, request.Type, true).Count(&preferenceCount)
+		logger.Info("DEBUG: preference query result", "count", preferenceCount, "error", prefResult.Error)
 
 		if preferenceCount == 0 {
 			logger.Warn("Validation failed: User has not opted-in for this notification type or does not exist", "user_id", request.UserID, "type", request.Type)
