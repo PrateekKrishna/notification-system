@@ -3,10 +3,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy from frontend/ subdir since Railway build context is repo root
+COPY frontend/package*.json ./
 RUN npm ci
 
-COPY . .
+COPY frontend/ .
 
 # Build the React app (VITE_* env vars are injected at build time)
 ARG VITE_USER_PREF_API_URL
