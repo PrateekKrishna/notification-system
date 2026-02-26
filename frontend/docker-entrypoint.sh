@@ -6,6 +6,13 @@ USER_PREF_URL="${VITE_USER_PREF_API_URL:-http://localhost:8081}"
 NOTIFICATION_URL="${VITE_NOTIFICATION_API_URL:-http://localhost:8082}"
 
 echo "Injecting API URLs..."
+echo "=== VITE env vars in container ==="
+env | grep VITE || echo "(none found)"
+echo "=================================="
+
+USER_PREF_URL="${VITE_USER_PREF_API_URL:-http://localhost:8081}"
+NOTIFICATION_URL="${VITE_NOTIFICATION_API_URL:-http://localhost:8082}"
+
 echo "  USER_PREF_API: $USER_PREF_URL"
 echo "  NOTIFICATION_API: $NOTIFICATION_URL"
 
