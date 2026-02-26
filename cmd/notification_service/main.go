@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 var logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -36,7 +37,9 @@ func getEnv(key, fallback string) string {
 func main() {
 	// --- Database Connection ---
 	dsn := getEnv("DATABASE_URL", "host=localhost user=user password=password dbname=notifications_db port=5432 sslmode=disable")
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: gormlogger.Default.LogMode(gormlogger.Info), // log all SQL queries
+	})
 	if err != nil {
 		panic("Failed to connect to database!")
 	}
@@ -91,8 +94,14 @@ func sendNotificationHandler(ch *amqp.Channel, db *gorm.DB) gin.HandlerFunc {
 
 		// 1. Check if the user exists AND has enabled the specific notification type.
 		var preferenceCount int64
-		logger.Info("DEBUG: checking preference", "user_id", request.UserID, "channel", request.Type)
-		prefResult := db.Model(&models.Preference{}).Where("user_id = ? AND channel = ? AND enabled = ?", request.UserID, request.Type, true).Count(&preferenceCount)
+
+		// Debug: count ALL prefs for this user (no filter) to isolate the issue
+		var allPrefs int64
+		db.Model(&models.Preference{}).Where("user_id = ?", request.UserID).Count(&allPrefs)
+		logger.Info("DEBUG: checking preference", "user_id", request.UserID, "channel", request.Type, "all_prefs_for_user", allPrefs)
+
+		// Use raw SQL to bypass any GORM ORM magic
+		prefResult := db.Raw("SELECT COUNT(*) FROM preferences WHERE user_id = ? AND channel = ? AND enabled = true AND deleted_at IS NULL", request.UserID, request.Type).Scan(&preferenceCount)
 		logger.Info("DEBUG: preference query result", "count", preferenceCount, "error", prefResult.Error)
 
 		if preferenceCount == 0 {
