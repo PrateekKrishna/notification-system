@@ -55,8 +55,17 @@ func main() {
 	utils.FailOnError(logger, err, "Failed to declare a queue")
 
 	// --- Redis Connection ---
-	redisAddr := getEnv("REDIS_URL", "localhost:6379")
-	redisClient = redis.NewClient(&redis.Options{Addr: redisAddr})
+	// Supports both full URL (redis://user:pass@host:port) and plain host:port
+	redisURL := getEnv("REDIS_URL", "redis://localhost:6379")
+	// If it's a plain host:port (local dev fallback), prefix it
+	if len(redisURL) > 0 && redisURL[0] != 'r' {
+		redisURL = "redis://" + redisURL
+	}
+	redisOpts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		panic("Failed to parse REDIS_URL: " + err.Error())
+	}
+	redisClient = redis.NewClient(redisOpts)
 
 	// --- Gin Router ---
 	router := gin.Default()
