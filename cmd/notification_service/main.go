@@ -8,17 +8,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/PrateekKrishna/notification-system/internal/models"
+	"github.com/PrateekKrishna/notification-system/internal/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"github.com/PrateekKrishna/notification-system/internal/models"
-	"github.com/PrateekKrishna/notification-system/internal/utils"
 )
-
-
 
 var logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 var redisClient *redis.Client
@@ -145,4 +143,3 @@ func rateLimiter() gin.HandlerFunc {
 		c.Next()
 	}
 }
-

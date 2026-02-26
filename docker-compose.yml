@@ -15,7 +15,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=notifications_db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d notifications_db"]
+      test: [ "CMD-SHELL", "pg_isready -U user -d notifications_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,7 +40,7 @@ services:
       - RABBITMQ_DEFAULT_USER=user
       - RABBITMQ_DEFAULT_PASS=password
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -53,7 +53,7 @@ services:
     volumes:
       - "redis_data:/data"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 5

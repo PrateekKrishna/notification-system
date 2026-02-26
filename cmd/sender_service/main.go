@@ -8,17 +8,15 @@ import (
 	"net/smtp"
 	"os"
 
+	"github.com/PrateekKrishna/notification-system/internal/models"
+	"github.com/PrateekKrishna/notification-system/internal/utils"
 	"github.com/joho/godotenv"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/twilio/twilio-go"
 	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"github.com/PrateekKrishna/notification-system/internal/models"
-	"github.com/PrateekKrishna/notification-system/internal/utils"
 )
-
-
 
 // Global variables for shared resources.
 var logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -117,7 +115,6 @@ func processMessage(d amqp.Delivery) {
 		}
 	}
 
-
 	var sendErr error
 	if shouldSend {
 		switch logEntry.Type {
@@ -182,5 +179,3 @@ func sendEmail(n models.NotificationLog) error {
 	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, msg)
 	return err
 }
-
-

@@ -5,31 +5,40 @@ import "gorm.io/gorm"
 
 // NotificationLog is the database model for logging notifications.
 type NotificationLog struct {
-    gorm.Model
-    UserID    string
-    Type      string
-    Message   string
-    Recipient string
-    Status    string // PENDING, SENT, FAILED, SKIPPED
+	gorm.Model
+	UserID    string
+	Type      string
+	Message   string
+	Recipient string
+	Status    string // PENDING, SENT, FAILED, SKIPPED
+}
+
+// User defines the database table structure for registered users.
+type User struct {
+	ID          string       `gorm:"primaryKey" json:"id"` // Using a string to match the requested user_id pattern
+	Name        string       `json:"name"`
+	Email       string       `json:"email"`
+	PhoneNumber string       `json:"phone_number"`
+	Preferences []Preference `gorm:"foreignKey:UserID;references:ID" json:"preferences"`
 }
 
 // Preference defines the database table structure for user preferences.
 type Preference struct {
-    gorm.Model
-    UserID  string `json:"user_id"`
-    Channel string `json:"channel"`
-    Enabled bool   `json:"enabled"`
+	gorm.Model
+	UserID  string `json:"user_id"`
+	Channel string `json:"channel"`
+	Enabled bool   `json:"enabled"`
 }
 
 // QueueMessage is the message we put on RabbitMQ.
 type QueueMessage struct {
-    NotificationLogID uint `json:"notification_log_id"`
+	NotificationLogID uint `json:"notification_log_id"`
 }
 
 // NotificationRequest is the incoming request from the client.
 type NotificationRequest struct {
-    UserID    string `json:"user_id"`
-    Type      string `json:"type"`
-    Message   string `json:"message"`
-    Recipient string `json:"recipient"`
+	UserID    string `json:"user_id"`
+	Type      string `json:"type"`
+	Message   string `json:"message"`
+	Recipient string `json:"recipient"`
 }
