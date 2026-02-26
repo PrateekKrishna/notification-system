@@ -9,13 +9,8 @@ RUN npm ci
 
 COPY frontend/ .
 
-# Build args from Railway Variables tab
-ARG VITE_USER_PREF_API_URL
-ARG VITE_NOTIFICATION_API_URL
-# Must explicitly set as ENV so Vite can read them during npm run build
-ENV VITE_USER_PREF_API_URL=$VITE_USER_PREF_API_URL
-ENV VITE_NOTIFICATION_API_URL=$VITE_NOTIFICATION_API_URL
-
+# Build with placeholder URLs — they get replaced at container startup
+# .env.production contains __VITE_USER_PREF_API_URL__ etc. as placeholders
 RUN npm run build
 
 # ===== FINAL STAGE — serve with nginx =====
@@ -23,9 +18,14 @@ FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config from repo (build context is repo root)
+# Copy nginx config
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy entrypoint script that replaces placeholder URLs with real env vars
+COPY frontend/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Entrypoint replaces __VITE_*__ placeholders then starts nginx
+ENTRYPOINT ["/docker-entrypoint.sh"]
