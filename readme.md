@@ -2,7 +2,7 @@
 
 A production-ready, multi-channel notification platform built with a **Go microservices architecture**. Supports real-time delivery via **Email**, **SMS**, and **WhatsApp** with user preference management, async message queuing, Redis rate limiting, and a React dashboard.
 
-🚀 **[Live Demo](https://your-frontend-url.railway.app)** · **[GitHub](https://github.com/PrateekKrishna/notification-system)**
+🚀 **[Live Demo](https://frontend-production-49e6.up.railway.app)** · **[GitHub](https://github.com/PrateekKrishna/notification-system)**
 
 ---
 
